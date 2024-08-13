@@ -1,9 +1,12 @@
+import io
+import json
+import time
 from typing import List
 
 from fastapi import APIRouter, HTTPException
 from fastapi import Request
 from pydantic import BaseModel, field_validator
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from ORM_Example.models import User, ChatRecord, MulTestModel
 
 import random
@@ -39,8 +42,40 @@ class ChatData(BaseModel):
     content: str
 
 
+async def get_chat_message(user_id: int, question: ChatData):
+    messages = [{'role': 'user', 'content': question.content}]
+    responses = Generation.call(
+        model="qwen-max",
+        messages=messages,
+        result_format='message',
+        stream=True,
+        incremental_output=True)
+    input_tokens = 0
+    output_tokens = 0
+    total_tokens = 0
+    request_id = ''
+    for response in responses:
+        if response.status_code == HTTPStatus.OK:
+            print(f'input: {response.usage.input_tokens}, output: {response.usage.output_tokens}, total :{response.usage.total_tokens}')
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+            total_tokens = response.usage.total_tokens
+            request_id = response.request_id
+            yield response.output.choices[0].message.content
+        else:
+            pass
+    await ChatRecord.create(request_id=request_id,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            total_tokens=total_tokens,
+                            user_id=user_id)  # 一对多关系绑定
+
+
 @chat.post('/get_chat/{user_id}', description='用通义进行对话')
 async def start_chat(user_id: int, question: ChatData):
+    # 流式输出
+    # return StreamingResponse(get_chat_message(user_id, question), media_type='text/plain')
+
     messages = [{'role': 'user', 'content': question.content}]
     response = Generation.call(model="qwen-max",
                                messages=messages,
@@ -53,11 +88,11 @@ async def start_chat(user_id: int, question: ChatData):
                                result_format='message')
     if response.status_code == HTTPStatus.OK:
         print(response.output.choices[0].message.content)
-        chat_record = await ChatRecord.create(request_id=response.request_id,
-                                              input_tokens=response.usage.input_tokens,
-                                              output_tokens=response.usage.output_tokens,
-                                              total_tokens=response.usage.total_tokens,
-                                              user_id=user_id)  # 一对多关系绑定
+        await ChatRecord.create(request_id=response.request_id,
+                                input_tokens=response.usage.input_tokens,
+                                output_tokens=response.usage.output_tokens,
+                                total_tokens=response.usage.total_tokens,
+                                user_id=user_id)  # 一对多关系绑定
         data = {'content': response.output.choices[0].message.content}
         return JSONResponse(status_code=200, content={'message': 'success', 'code': 200, 'output': data})
     else:

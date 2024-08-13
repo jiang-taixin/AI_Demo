@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi import Request, Response
 
@@ -54,3 +55,6 @@ async def middleware_method1(request: Request, next_call):
 # 静态文件  path是访问路径  directory='static'实际路径
 # http://localhost:8000/static/index.html
 app.mount('/static', StaticFiles(directory='static'))
+
+if __name__ == '__main__':
+    uvicorn.run('main:app', host='0.0.0.0', reload=True, port=8000)
