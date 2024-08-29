@@ -17,4 +17,4 @@ EXPOSE 80
 ENV PORT=80
  
 # 运行Gunicorn服务器，使用4个工作进程，绑定端口到PORT环境变量
-CMD ["gunicorn", "-b", "0.0.0.0:$PORT", "main:app", "--workers", "4"]
+CMD ["gunicorn", "-b", "main:app", "--workers", "4"]
