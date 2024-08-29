@@ -4,7 +4,10 @@
 
 * pip install fastapi
 * pip install uvicorn
-* --reload --port 8001 
+* pip install pydantic
+* pip install tortoise-orm
+* --reload --port 8001
+* 导出requirements pip freeze > requirements.txt
 
 #### 路径操作
 

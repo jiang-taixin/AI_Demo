@@ -1,4 +1,5 @@
 import axios from 'axios'
+import {message} from "ant-design-vue";
 // 创建axios实例
 const request = axios.create({
     baseURL: 'http://localhost:8000',// 所有的请求地址前缀部分
@@ -21,6 +22,7 @@ request.interceptors.response.use(
         return response.data
     },
     error => {
+        message.error('error')
         return Promise.reject(error)
     }
 )

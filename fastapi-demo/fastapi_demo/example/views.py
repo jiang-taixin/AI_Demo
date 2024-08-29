@@ -21,7 +21,7 @@ response_description='响应description'
 '''
 
 
-@example.get('/', summary='请求模型',
+@example.get('/', summary='测试',
              description='get example description',
              response_description='get example response description')
 async def example_get(request: Request):
